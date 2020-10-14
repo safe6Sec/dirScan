@@ -1,5 +1,6 @@
 # dirScan
 自用目录扫描
+![dirScan][1]  
 
 # 优点
 没任何优点，完全是按个人使用习惯开发。   
@@ -17,8 +18,12 @@
 图形化的，有手就行。  
 
 
-## 最后
+# 最后
 博客：http://www.safe6.cn/      
-公众号：safe6安全的成长日记            
-软件我已经打包放公众号，需要的自取(回复：目录扫描)    
+公众号：safe6安全的成长日记       
+![safe6][2]   
+软件我已经打包放公众号，需要的自取(回复：目录扫描)      
 
+
+  [1]: https://github.com/safe6Sec/dirScan/blob/master/img.png
+  [2]: http://qiniu.safe6.cn/qrcode.jpg
