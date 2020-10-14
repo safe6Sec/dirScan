@@ -1,2 +1,0 @@
-/easy_editor/upload_image.php
-/easy_editor/upload_image.asp
