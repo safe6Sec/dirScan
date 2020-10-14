@@ -3,6 +3,7 @@ package cn.safe6.dirScan.utils;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
@@ -18,14 +19,24 @@ import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.routing.HttpRoute;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.pool.ConnPool;
 import org.apache.http.util.EntityUtils;
+
+import javax.net.ssl.SSLContext;
 
 
 public class HttpClientUtil {
@@ -35,10 +46,22 @@ public class HttpClientUtil {
     public static String CURRENT = "";
     public static String CURRENT1 = "";
     public static int timeOut = 10;
+    private static SSLConnectionSocketFactory sslsf;
 
     private static void init() {
         if (cm == null) {
-            cm = new PoolingHttpClientConnectionManager();
+            try {
+                sslsf = new SSLConnectionSocketFactory(SSLContext.getDefault(),
+                        NoopHostnameVerifier.INSTANCE);
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
+            final Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory>create()
+                    .register("http", new PlainConnectionSocketFactory())
+                    .register("https", sslsf)
+                    .build();
+            cm = new PoolingHttpClientConnectionManager(registry);
+            //cm = new PoolingHttpClientConnectionManager();
             cm.setMaxTotal(2000);// 整个连接池最大连接数
             cm.setDefaultMaxPerRoute(500);// 每路由最大连接数，默认值是2
         }
@@ -50,8 +73,10 @@ public class HttpClientUtil {
      * @return
      */
     public static CloseableHttpClient getHttpClient() {
+
         init();
-        return HttpClients.custom().setConnectionManager(cm).build();
+        HttpClientBuilder builder = HttpClients.custom().setConnectionManager(cm).setSSLSocketFactory(sslsf);
+        return builder.build();
     }
 
 
@@ -82,7 +107,7 @@ public class HttpClientUtil {
      * @throws IOException
      */
 
-    public static CloseableHttpResponse get(String url) throws IOException {
+    public static CloseableHttpResponse get(String url) {
 
 
         HttpGet httpGet = new HttpGet(url);
@@ -98,7 +123,12 @@ public class HttpClientUtil {
         httpGet.setHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
         httpGet.setHeader( "Accept-Language","zh-CN,zh;q=0.8,en;q=0.6");
         httpGet.setConfig(requestConfig);
-        return getHttpClient().execute(httpGet);
+        try {
+            return getHttpClient().execute(httpGet);
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+        return null;
 
     }
 
@@ -110,18 +140,24 @@ public class HttpClientUtil {
      */
 
 
-    public static CloseableHttpResponse head(String url) throws IOException {
+    public static CloseableHttpResponse head(String url) {
 
 
         HttpHead httpHead = new HttpHead(url);
         httpHead.setHeader("User-Agent","Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.89 Safari/537.36" );
-        httpHead.setHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
-        httpHead.setHeader( "Accept-Language","zh-CN,zh;q=0.8,en;q=0.6");
+        //httpHead.setHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
+        //httpHead.setHeader( "Accept-Language","zh-CN,zh;q=0.8,en;q=0.6");
         RequestConfig requestConfig = RequestConfig.custom()
-                .setConnectTimeout(timeOut*100).build();
+                .setConnectTimeout(timeOut*1000).build();
         httpHead.setConfig(requestConfig);
         // response.getStatusLine().getStatusCode();
-        return getHttpClient().execute(httpHead);
+        try {
+            return getHttpClient().execute(httpHead);
+        } catch (IOException e) {
+            //e.printStackTrace();
+            System.out.println(e.getMessage());
+        }
+        return null;
 
     }
     
@@ -264,6 +300,8 @@ public class HttpClientUtil {
 
         return EMPTY_STR;
     }
+
+
     
 
 }

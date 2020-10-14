@@ -5,6 +5,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.List;
 
+import cn.hutool.http.HttpUtil;
 import cn.safe6.dirScan.MainFrame;
 import cn.safe6.dirScan.utils.HttpClientUtil;
 import org.apache.http.HttpEntity;
@@ -33,48 +34,58 @@ public class ScanTask implements Runnable {
 
     @Override
     public void run() {
-
+        //System.out.println(Thread.currentThread().getName() + "开始扫描。。");
+        //System.out.println("字典数:"+dictList.size());
         HttpClientUtil.timeOut = timeOut;
-        try {
-            if ("head".equals(method)) {
-                headUrl();
-            } else {
-                getUrl();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+        if ("head".equals(method)) {
+            headUrl();
+        } else {
+            getUrl();
         }
 
     }
 
-    private void getUrl() throws IOException {
+    private synchronized void getUrl()  {
         for (String dict : dictList) {
-            String reqUrl = url.trim().concat(java.net.URLEncoder.encode(dict.trim(), "ISO-8859-1"));
-            MainFrame.scanLog.setText(dict);
+            String reqUrl="";
+            //扫描数+1
+            MainFrame.scanNumber += 1;
             try {
+                reqUrl = url.trim().concat(java.net.URLEncoder.encode(dict.trim(), "ISO-8859-1"));
+                System.out.println(reqUrl);
+                MainFrame.scanLog.setText(dict);
                 this.get(reqUrl);
             } catch (IOException e) {
                 e.printStackTrace();
-                this.get(reqUrl);
+                try {
+                    this.get(reqUrl);
+                } catch (IOException ioException) {
+                    ioException.printStackTrace();
+                }
             }
         }
-        System.out.println(Thread.currentThread().getName() + "运行结束。。");
         MainFrame.threadFlag -= 1;
 
     }
 
-    private void headUrl() throws IOException {
+    private synchronized void headUrl() {
         for (String dict : dictList) {
-            String reqUrl = url.trim().concat(java.net.URLEncoder.encode(dict.trim(), "ISO-8859-1"));
-            MainFrame.scanLog.setText(dict);
+            String reqUrl ="";
+            MainFrame.scanNumber += 1;
             try {
+                reqUrl = url.trim().concat(java.net.URLEncoder.encode(dict.trim(), "ISO-8859-1"));
+                System.out.println(reqUrl);
+                MainFrame.scanLog.setText(dict);
                 this.head(reqUrl);
             } catch (IOException e) {
                 e.printStackTrace();
-                this.head(reqUrl);
+                try {
+                    this.get(reqUrl);
+                } catch (IOException ioException) {
+                    ioException.printStackTrace();
+                }
             }
         }
-        System.out.println(Thread.currentThread().getName() + "运行结束。。");
         MainFrame.threadFlag -= 1;
     }
 
@@ -86,26 +97,25 @@ public class ScanTask implements Runnable {
      */
     private void head(String reqUrl) throws IOException {
         CloseableHttpResponse response = HttpClientUtil.head(reqUrl);
-        System.out.println(reqUrl);
-        MainFrame.scanNumber += 1;
-        int code = response.getStatusLine().getStatusCode();
-        //head 拿不到title
-        if (!stateCode.contains(String.valueOf(code))) {
-            if (code == 200) {
-                this.get(reqUrl);
-            } else {
-                MainFrame.defaultTableModel.addRow(new Object[]{"", reqUrl, "", code});
-                MainFrame.table.updateUI();
+        if (response!=null){
+            int code = response.getStatusLine().getStatusCode();
+            //head 拿不到title
+            if (!stateCode.contains(String.valueOf(code))) {
+                if (code == 200) {
+                    this.get(reqUrl);
+                } else {
+                    MainFrame.defaultTableModel.addRow(new Object[]{"", reqUrl, "", code});
+                    MainFrame.table.updateUI();
+                }
             }
-        }
-        response.close();
-        try {
-            if (MainFrame.delayTime != 0) {
-                Thread.sleep(MainFrame.delayTime * 1000);
+            response.close();
+            try {
+                if (MainFrame.delayTime != 0) {
+                    Thread.sleep(MainFrame.delayTime * 1000);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
         }
     }
 
@@ -115,32 +125,35 @@ public class ScanTask implements Runnable {
      * @param reqUrl
      */
     private void get(String reqUrl) throws IOException {
-        System.out.println(reqUrl);
-        //扫描数+1
-        MainFrame.scanNumber += 1;
         CloseableHttpResponse response = HttpClientUtil.get(reqUrl);
-        int code = response.getStatusLine().getStatusCode();
-        if (!stateCode.contains(String.valueOf(code))) {
-            HttpEntity entity = response.getEntity();
-            String html = EntityUtils.toString(entity, "utf-8");
-            Document doc = Jsoup.parse(html);
-            //排除假性404
-            if (code == 200) {
-                if (doc.title().contains("404") || html.contains("404")) {
-                    response.close();
-                    return;
+        if (response!=null){
+            int code = response.getStatusLine().getStatusCode();
+            if (!stateCode.contains(String.valueOf(code))) {
+                HttpEntity entity = response.getEntity();
+                String html = EntityUtils.toString(entity, "utf-8");
+                String title ="";
+                if (html.length()<1800){
+                    Document doc = Jsoup.parse(html);
+                    title = doc.title();
                 }
+                //排除假性404
+                if (code == 200) {
+                    if (title.contains("404")) {
+                        response.close();
+                        return;
+                    }
+                }
+                MainFrame.defaultTableModel.addRow(new Object[]{title, reqUrl, html.length(), code});
+                MainFrame.table.updateUI();
+                response.close();
             }
-            MainFrame.defaultTableModel.addRow(new Object[]{doc.title(), reqUrl, html.length(), code});
-            MainFrame.table.updateUI();
-            response.close();
-        }
-        try {
-            if (MainFrame.delayTime != 0) {
-                Thread.sleep(MainFrame.delayTime * 1000);
+            try {
+                if (MainFrame.delayTime != 0) {
+                    Thread.sleep(MainFrame.delayTime * 1000);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
     }
 

@@ -49,6 +49,7 @@ public class MainFrame extends JFrame {
 	public static int threadFlag;
 	public static int dictSize;
 	public static int scanNumber;
+	public static boolean isScan = false;
 	public static int delayTime;
 	public static JComboBox delay;
 	public static DefaultTableModel defaultTableModel= new DefaultTableModel(new Object[][]{},new String[] { "title", "url", "length", "code" }) {
@@ -155,7 +156,7 @@ public class MainFrame extends JFrame {
 		threadNumber.setFont(new Font("微软雅黑", Font.PLAIN, 12));
 		threadNumber.setModel(new DefaultComboBoxModel(
 				new String[] { "8", "16", "32", "40", "48", "56", "64", "72", "80", "100" }));
-		threadNumber.setSelectedIndex(6);
+		threadNumber.setSelectedIndex(2);
 		threadNumber.setBounds(290, 59, 56, 21);
 		panel.add(threadNumber);
 
@@ -199,44 +200,45 @@ public class MainFrame extends JFrame {
 					}
 				}
 
-				//生成当前域名备份字典
-				Pattern p = Pattern.compile("(?<=//|)((\\w)+\\.)+\\w+");
+				if (!isScan){
+					//生成当前域名备份字典
+					Pattern p = Pattern.compile("(?<=//|)((\\w)+\\.)+\\w+");
+					Matcher m = p.matcher(url.getText());
+					if(m.find()){
+						String group = m.group();
+						String[] split = group.split("\\.");
+						String bak1 = group.replace(".","_");
+						String bak2 = "www";
+						String bak3;
+						String bak4;
+						if (split.length>2){
+							bak2 = bak2+"_"+split[1]+"_"+split[2];
+						}
+						if (split.length>2){
+							bak3 = split[1];
+							bak4 = split[1]+"_"+split[2];
+						}else {
+							bak3 = split[0];
+							bak4 = split[0]+"_"+split[1];
+						}
 
-				Matcher m = p.matcher(url.getText());
-
-				if(m.find()){
-					String group = m.group();
-					String[] split = group.split("\\.");
-					String bak1 = group.replace(".","_");
-					String bak2 = "www";
-					String bak3 = null;
-					String bak4 = null;
-					if (split.length>1){
-						bak2 = bak2+"_"+split[1]+"_"+split[2];
+						for (String suff :suffix){
+							if (bak1!=null){
+								dictList.add(bak1+suff);
+							}
+							if (bak2!=null){
+								dictList.add(bak2+suff);
+							}
+							if (bak3!=null){
+								dictList.add(bak3+suff);
+							}
+							if (bak4!=null){
+								dictList.add(bak4+suff);
+							}
+						}
 					}
-					if (split.length>1){
-						bak3 = split[1];
-						bak4 = split[1]+"_"+split[2];
-					}else {
-						bak3 = split[0];
-						bak4 = split[0]+"_"+split[1];
-					}
-
-					for (String suff :suffix){
-						if (bak1!=null){
-							dictList.add(bak1+suff);
-						}
-						if (bak2!=null){
-							dictList.add(bak2+suff);
-						}
-						if (bak3!=null){
-							dictList.add(bak3+suff);
-						}
-						if (bak4!=null){
-							dictList.add(bak4+suff);
-						}
-					}
-
+					dictSize = dictList.size();
+					isScan = true;
 				}
 
 			if (startScan.isSelected()) {
@@ -251,7 +253,7 @@ public class MainFrame extends JFrame {
 				String methodv = method.getSelectedItem().toString();
 				String stateCodev = stateCode.getText();
 				// maximumPoolSize设置为2 ，拒绝策略为AbortPolic策略，直接抛出异常
-				pool = new ThreadPoolExecutor(500, 600, timeOutv*100, TimeUnit.MILLISECONDS,
+				pool = new ThreadPoolExecutor(100, 600, timeOutv*1000, TimeUnit.MILLISECONDS,
 						new LinkedBlockingQueue<Runnable>(), Executors.defaultThreadFactory(),
 						new ThreadPoolExecutor.AbortPolicy());
 

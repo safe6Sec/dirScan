@@ -8,7 +8,7 @@ public class StatueListening implements Runnable {
 
 
     @Override
-    public void run() {
+    public synchronized void run() {
         while (true) {
             MainFrame.scanProgress.setText(MainFrame.scanNumber+"/"+MainFrame.dictSize);
             MainFrame.scanState.setText("当前线程数"+MainFrame.threadFlag);
