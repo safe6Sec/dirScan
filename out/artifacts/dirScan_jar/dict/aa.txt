@@ -1,8 +1,0 @@
-/admin/
-/admin/login.asp
-/admin.asp
-/admin.php
-/wwwroot.rar
-/wwwroot.zip
-/www.rar
-/www.zip
