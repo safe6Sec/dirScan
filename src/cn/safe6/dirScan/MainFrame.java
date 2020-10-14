@@ -140,7 +140,7 @@ public class MainFrame extends JFrame {
 
 		});
 		importDictFile.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-		importDictFile.setBounds(570, 22, 70, 23);
+		importDictFile.setBounds(590, 22, 70, 23);
 		panel.add(importDictFile);
 
 		//String[] s = new String[] { "10", "20", "30", "40", "50", "60", "100", "200", "500" };
@@ -289,7 +289,7 @@ public class MainFrame extends JFrame {
 		});
 
 		startScan.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-		startScan.setBounds(650, 22, 75, 23);
+		startScan.setBounds(663, 22, 75, 23);
 		panel.add(startScan);
 
 		JLabel label_55 = new JLabel("内置字典：");
@@ -309,7 +309,7 @@ public class MainFrame extends JFrame {
 		localDict.setModel(new DefaultComboBoxModel(files));
 		localDict.setMaximumRowCount(10);
 		localDict.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-		localDict.setBounds(470, 22, 90, 22);
+		localDict.setBounds(465, 22, 120, 22);
 		localDict.addActionListener(e1 -> {
 			this.initDictList();
 		});
