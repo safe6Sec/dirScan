@@ -1,5 +1,6 @@
 # dirScan
 自用目录扫描
+![dirScan][1]  
 
 # 优点
 没任何优点，完全是按个人使用习惯开发。   
@@ -14,11 +15,20 @@
 添加根据域名生成特定数据备份字典  
 
 # 使用
+java -jar dirScan.jar
 图形化的，有手就行。  
 
+# todo
+下次就把代理池加进去吧，我觉得可以。     
+emm.还有就是代理池的2.0版本出来了，近期会更新。  
 
-## 最后
+
+# 最后
 博客：http://www.safe6.cn/      
-公众号：safe6安全的成长日记            
-软件我已经打包放公众号，需要的自取(回复：目录扫描)    
+公众号：safe6安全的成长日记       
+![safe6][2]   
+软件我已经打包放公众号，需要的自取(回复：目录扫描)      
 
+
+  [1]: https://github.com/safe6Sec/dirScan/blob/master/img.png
+  [2]: http://qiniu.safe6.cn/qrcode.jpg
