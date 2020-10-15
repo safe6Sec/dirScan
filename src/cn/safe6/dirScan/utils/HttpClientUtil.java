@@ -1,50 +1,41 @@
 package cn.safe6.dirScan.utils;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.*;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
+
+import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.Set;
-
-import org.apache.http.HttpEntity;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpHead;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.config.Registry;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.config.SocketConfig;
-import org.apache.http.conn.routing.HttpRoute;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.pool.ConnPool;
-import org.apache.http.util.EntityUtils;
-
-import javax.net.ssl.SSLContext;
 
 
+/**
+ * @author safe6
+ */
 public class HttpClientUtil {
 	private static PoolingHttpClientConnectionManager cm;
     private static String EMPTY_STR = "none";
     private static String UTF_8 = "UTF-8";
     public static String CURRENT = "";
-    public static String CURRENT1 = "";
     public static int timeOut = 10;
     private static SSLConnectionSocketFactory sslsf;
 
@@ -62,8 +53,8 @@ public class HttpClientUtil {
                     .build();
             cm = new PoolingHttpClientConnectionManager(registry);
             //cm = new PoolingHttpClientConnectionManager();
-            cm.setMaxTotal(2000);// 整个连接池最大连接数
-            cm.setDefaultMaxPerRoute(500);// 每路由最大连接数，默认值是2
+            cm.setMaxTotal(5000);// 整个连接池最大连接数
+            cm.setDefaultMaxPerRoute(1000);// 每路由最大连接数，默认值是2
         }
     }
 
@@ -73,19 +64,10 @@ public class HttpClientUtil {
      * @return
      */
     public static CloseableHttpClient getHttpClient() {
-
         init();
         HttpClientBuilder builder = HttpClients.custom().setConnectionManager(cm).setSSLSocketFactory(sslsf);
         return builder.build();
     }
-
-
-
-//    public static void getSize(){
-//        if(cm!=null){
-//            System.out.println(cm.getDefaultConnectionConfig().getBufferSize());
-//        }
-//    }
 
     /**
      * 
@@ -120,8 +102,6 @@ public class HttpClientUtil {
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectTimeout(timeOut*1000).build();
         httpGet.setHeader("User-Agent","Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.89 Safari/537.36" );
-        httpGet.setHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
-        httpGet.setHeader( "Accept-Language","zh-CN,zh;q=0.8,en;q=0.6");
         httpGet.setConfig(requestConfig);
         try {
             return getHttpClient().execute(httpGet);
@@ -145,8 +125,6 @@ public class HttpClientUtil {
 
         HttpHead httpHead = new HttpHead(url);
         httpHead.setHeader("User-Agent","Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.89 Safari/537.36" );
-        //httpHead.setHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
-        //httpHead.setHeader( "Accept-Language","zh-CN,zh;q=0.8,en;q=0.6");
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectTimeout(timeOut*1000).build();
         httpHead.setConfig(requestConfig);
@@ -292,8 +270,6 @@ public class HttpClientUtil {
                 //System.out.println(result);
                 return result;
             }
-        } catch (ClientProtocolException e) {
-        	e.printStackTrace();
         } catch (IOException e) {
         	e.printStackTrace();
         }

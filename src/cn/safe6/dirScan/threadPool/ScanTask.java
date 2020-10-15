@@ -104,7 +104,7 @@ public class ScanTask implements Runnable {
                 if (code == 200) {
                     this.get(reqUrl);
                 } else {
-                    MainFrame.defaultTableModel.addRow(new Object[]{"", reqUrl, "", code});
+                    MainFrame.defaultTableModel.addRow(new Object[]{"", java.net.URLDecoder.decode(reqUrl,"ISO-8859-1"), "", code});
                     MainFrame.table.updateUI();
                 }
             }
@@ -130,20 +130,18 @@ public class ScanTask implements Runnable {
             int code = response.getStatusLine().getStatusCode();
             if (!stateCode.contains(String.valueOf(code))) {
                 HttpEntity entity = response.getEntity();
-                String html = EntityUtils.toString(entity, "utf-8");
                 String title ="";
-                if (html.length()<1800){
+                //排除假性404
+                if (entity.getContentLength()<1800){
+                    String html = EntityUtils.toString(entity, "utf-8");
                     Document doc = Jsoup.parse(html);
                     title = doc.title();
                 }
-                //排除假性404
-                if (code == 200) {
-                    if (title.contains("404")) {
-                        response.close();
-                        return;
-                    }
+                if (title.contains("404")) {
+                    response.close();
+                    return;
                 }
-                MainFrame.defaultTableModel.addRow(new Object[]{title, reqUrl, html.length(), code});
+                MainFrame.defaultTableModel.addRow(new Object[]{title, java.net.URLDecoder.decode(reqUrl,"ISO-8859-1"), entity.getContentLength(), code});
                 MainFrame.table.updateUI();
                 response.close();
             }

@@ -82,7 +82,7 @@ public class MainFrame extends JFrame {
 
 		JLabel lblUrl = new JLabel("url：");
 		lblUrl.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-		lblUrl.setBounds(24, 26, 30, 15);
+		lblUrl.setBounds(28, 26, 46, 15);
 		panel.add(lblUrl);
 
 		url = new JTextField();
@@ -367,12 +367,12 @@ public class MainFrame extends JFrame {
 		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		scrollPane.setViewportView(table);
 		table.setModel(defaultTableModel);
-		table.setRowHeight(22);
-		table.getColumnModel().getColumn(0).setPreferredWidth(50);
+		table.setRowHeight(23);
+		table.getColumnModel().getColumn(0).setPreferredWidth(80);
 		table.getColumnModel().getColumn(0).setMinWidth(6);
 		table.getColumnModel().getColumn(1).setPreferredWidth(376);
 		table.getColumnModel().getColumn(1).setMinWidth(26);
-		table.getColumnModel().getColumn(3).setPreferredWidth(60);
+		table.getColumnModel().getColumn(3).setPreferredWidth(30);
 		table.setFont(new Font("微软雅黑", Font.PLAIN, 12));
 
 		JLabel lblNewLabel = new JLabel("扫描信息：");
