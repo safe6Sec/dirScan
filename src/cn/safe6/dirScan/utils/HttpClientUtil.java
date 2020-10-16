@@ -1,29 +1,40 @@
 package cn.safe6.dirScan.utils;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.NameValuePair;
+import org.apache.http.*;
+import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.*;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.protocol.HttpContext;
+import org.apache.http.ssl.SSLContextBuilder;
+import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
 
-import javax.net.ssl.SSLContext;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import javax.net.ssl.*;
+import java.io.*;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -42,20 +53,88 @@ public class HttpClientUtil {
     private static void init() {
         if (cm == null) {
             try {
-                sslsf = new SSLConnectionSocketFactory(SSLContext.getDefault(),
-                        NoopHostnameVerifier.INSTANCE);
-            } catch (NoSuchAlgorithmException e) {
+                SSLContext sslContext = getSSLContext(true, null, null);
+                /*SSLContext sslContext = SSLContextBuilder
+                        .create()
+                        .loadTrustMaterial(new TrustSelfSignedStrategy())
+                        .build();*/
+
+                HostnameVerifier allowAllHosts = new NoopHostnameVerifier();
+
+                sslsf = new SSLConnectionSocketFactory(sslContext,
+                        allowAllHosts);
+
+            } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
                 throw new RuntimeException(e);
+            } catch (CertificateException | IOException e) {
+                e.printStackTrace();
             }
-            final Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory>create()
-                    .register("http", new PlainConnectionSocketFactory())
+            Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory>create()
+                    .register("http", PlainConnectionSocketFactory.INSTANCE)
                     .register("https", sslsf)
                     .build();
+/*            final Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory>create()
+                    .register("http", new PlainConnectionSocketFactory())
+                    .register("https", sslsf)
+                    .build();*/
             cm = new PoolingHttpClientConnectionManager(registry);
             //cm = new PoolingHttpClientConnectionManager();
-            cm.setMaxTotal(5000);// 整个连接池最大连接数
-            cm.setDefaultMaxPerRoute(1000);// 每路由最大连接数，默认值是2
+            // 整个连接池最大连接数
+            cm.setMaxTotal(5000);
+            // 每路由最大连接数，默认值是2
+            cm.setDefaultMaxPerRoute(1000);
         }
+    }
+
+
+    /**
+     * 获取SSL上下文对象,用来构建SSL Socket连接
+     *
+     * @param isDeceive 是否绕过SSL
+     * @param creFile 整数文件,isDeceive为true 可传null
+     * @param crePwd 整数密码,isDeceive为true 可传null, 空字符为没有密码
+     * @return SSL上下文对象
+     * @throws KeyManagementException
+     * @throws NoSuchAlgorithmException
+     * @throws KeyStoreException
+     * @throws IOException
+     * @throws FileNotFoundException
+     * @throws CertificateException
+     */
+    private static SSLContext getSSLContext(boolean isDeceive, File creFile, String crePwd) throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, CertificateException, FileNotFoundException, IOException {
+
+        SSLContext sslContext = null;
+
+        if (isDeceive) {
+            sslContext = SSLContext.getInstance("SSLv3");
+            // 实现一个X509TrustManager接口，用于绕过验证，不用修改里面的方法
+            X509TrustManager x509TrustManager = new X509TrustManager() {
+                @Override
+                public X509Certificate[] getAcceptedIssuers() {
+                    return null;
+                }
+                @Override
+                public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                }
+                @Override
+                public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                }
+            };
+            sslContext.init(null, new TrustManager[] {x509TrustManager}, null);
+        } else {
+            if (null != creFile && creFile.length() > 0) {
+                if (null != crePwd) {
+                    KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+                    keyStore.load(new FileInputStream(creFile), crePwd.toCharArray());
+                    sslContext = SSLContexts.custom().loadTrustMaterial(keyStore, new TrustSelfSignedStrategy()).build();
+                } else {
+                    throw new SSLHandshakeException("整数密码为空");
+                }
+            }
+        }
+
+        return sslContext;
+
     }
 
     /**
@@ -65,7 +144,45 @@ public class HttpClientUtil {
      */
     public static CloseableHttpClient getHttpClient() {
         init();
-        HttpClientBuilder builder = HttpClients.custom().setConnectionManager(cm).setSSLSocketFactory(sslsf);
+        // 配置超时回调机制
+        HttpRequestRetryHandler retryHandler = new HttpRequestRetryHandler() {
+            @Override
+            public boolean retryRequest(IOException exception, int executionCount, HttpContext context) {
+                if (executionCount >= 3) {// 如果已经重试了3次，就放弃
+                    return false;
+                }
+                if (exception instanceof NoHttpResponseException) {// 如果服务器丢掉了连接，那么就重试
+                    return true;
+                }
+                if (exception instanceof SSLHandshakeException) {// 不要重试SSL握手异常
+                    return false;
+                }
+                if (exception instanceof InterruptedIOException) {// 超时
+                    return true;
+                }
+                if (exception instanceof UnknownHostException) {// 目标服务器不可达
+                    return false;
+                }
+                if (exception instanceof ConnectTimeoutException) {// 连接被拒绝
+                    return false;
+                }
+                if (exception instanceof SSLException) {// ssl握手异常
+                    return false;
+                }
+                HttpClientContext clientContext = HttpClientContext.adapt(context);
+                HttpRequest request = clientContext.getRequest();
+                // 如果请求是幂等的，就再次尝试
+                if (!(request instanceof HttpEntityEnclosingRequest)) {
+                    return true;
+                }
+                return false;
+            }
+        };
+        HttpClientBuilder builder = HttpClients
+                .custom()
+                .setConnectionManager(cm)
+                .setSSLSocketFactory(sslsf)
+                .setRetryHandler(retryHandler);
         return builder.build();
     }
 
@@ -90,8 +207,6 @@ public class HttpClientUtil {
      */
 
     public static CloseableHttpResponse get(String url) {
-
-
         HttpGet httpGet = new HttpGet(url);
 /*        SocketConfig socketConfig = SocketConfig.custom()
                 .setSoKeepAlive(false)
@@ -132,7 +247,7 @@ public class HttpClientUtil {
         try {
             return getHttpClient().execute(httpHead);
         } catch (IOException e) {
-            //e.printStackTrace();
+            e.printStackTrace();
             System.out.println(e.getMessage());
         }
         return null;
