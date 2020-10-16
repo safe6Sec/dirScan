@@ -65,7 +65,7 @@ public class MainFrame extends JFrame {
 	 */
 	public MainFrame() {
 		setResizable(false);
-		setTitle("safe6 目录扫描工具v1.2   www.safe6.cn 20201014");
+		setTitle("safe6 目录扫描工具v1.2   www.safe6.cn 20201016");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 		setBounds((screenSize.width - 771) / 2, (screenSize.height - 547) / 2, 771, 547);
