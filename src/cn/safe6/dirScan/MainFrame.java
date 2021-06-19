@@ -67,7 +67,7 @@ public class MainFrame extends JFrame {
      */
     public MainFrame() {
         setResizable(false);
-        setTitle("safe6 目录扫描工具v1.2   www.safe6.cn 20201016");
+        setTitle("safe6 目录扫描工具v1.2.4   www.safe6.cn 20210619");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         setBounds((screenSize.width - 771) / 2, (screenSize.height - 547) / 2, 771, 547);
@@ -124,15 +124,11 @@ public class MainFrame extends JFrame {
                 //清空
                 dictList = new ArrayList<>();
                 try {
+                    System.out.println("打开文件"+dictFilePath);
                     BufferedReader fb = new BufferedReader(new FileReader(new File(dictFilePath)));
                     while (fb.ready()) {
-                        String tmp = fb.readLine().trim();
-                        if (!tmp.startsWith("/")) {
-                            dictList.add(tmp);
-                        }
+                        dictList.add(fb.readLine().trim());
                     }
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -169,7 +165,7 @@ public class MainFrame extends JFrame {
 
         timeOut = new JComboBox();
         timeOut.setModel(new DefaultComboBoxModel(new String[]{"3", "5", "10", "15", "30"}));
-        timeOut.setSelectedIndex(2);
+        timeOut.setSelectedIndex(1);
         timeOut.setMaximumRowCount(10);
         timeOut.setFont(new Font("微软雅黑", Font.PLAIN, 12));
         timeOut.setBounds(406, 59, 46, 21);
@@ -206,40 +202,52 @@ public class MainFrame extends JFrame {
                 target = target + "/";
             }
 
-            if (!isScan && StrUtil.count(target, ".") ==2) {
+            if (!isScan && StrUtil.count(target, ".") <=2) {
                 //生成当前域名备份字典
                 Pattern p = Pattern.compile("(?<=//|)((\\w)+\\.)+\\w+");
                 Matcher m = p.matcher(target);
                 if (m.find()) {
                     String group = m.group();
-                    String[] split = group.split("\\.");
+                    String[] domain = group.split("\\.");
                     String bak1 = group.replace(".", "_");
                     String bak2 = "www";
                     String bak3;
                     String bak4;
-                    if (split.length > 2) {
-                        bak2 = bak2 + "_" + split[1] + "_" + split[2];
+                    if (domain.length < 3) {
+                        bak2 = bak2 + "_" + domain[0] + "_" + domain[1];
                     }
-                    if (split.length > 2) {
-                        bak3 = split[1];
-                        bak4 = split[1] + "_" + split[2];
+                    if (domain.length >= 3) {
+                        bak3 = domain[1];
+                        bak4 = domain[1] + "_" + domain[2];
                     } else {
-                        bak3 = split[0];
-                        bak4 = split[0] + "_" + split[1];
+                        bak3 = domain[0];
+                        bak4 = domain[0] + "_" + domain[1];
                     }
 
                     for (String suff : suffix) {
                         if (bak1 != null) {
                             dictList.add(bak1 + suff);
+                            dictList.add(bak1 +"2020"+ suff);
+                            dictList.add(bak1 +"2019"+ suff);
+                            dictList.add(bak1 +"2021"+ suff);
                         }
                         if (bak2 != null) {
                             dictList.add(bak2 + suff);
+                            dictList.add(bak2 +"2020"+ suff);
+                            dictList.add(bak2 +"2019"+ suff);
+                            dictList.add(bak2 +"2021"+ suff);
                         }
                         if (bak3 != null) {
                             dictList.add(bak3 + suff);
+                            dictList.add(bak3 +"2020"+ suff);
+                            dictList.add(bak3 +"2019"+ suff);
+                            dictList.add(bak3 +"2021"+ suff);
                         }
                         if (bak4 != null) {
                             dictList.add(bak4 + suff);
+                            dictList.add(bak4 +"2020"+ suff);
+                            dictList.add(bak4 +"2019"+ suff);
+                            dictList.add(bak4 +"2021"+ suff);
                         }
                     }
                 }
@@ -250,7 +258,7 @@ public class MainFrame extends JFrame {
             if (startScan.isSelected()) {
                 startScan.setText("停止");
                 //重置已经扫描数
-                scanNumber = 0;
+                //scanNumber = 0;
                 delayTime = Integer.parseInt(delay.getSelectedItem().toString());
 
                 int threadNum = Integer.parseInt(threadNumber.getSelectedItem().toString());
@@ -441,10 +449,8 @@ public class MainFrame extends JFrame {
                         dictList.add(tmp);
                     }
                 }
-            } catch (FileNotFoundException fileNotFoundException) {
+            } catch (IOException fileNotFoundException) {
                 fileNotFoundException.printStackTrace();
-            } catch (IOException ioException) {
-                ioException.printStackTrace();
             }
             dictSize = dictList.size();
             scanProgress.setText("0/" + dictSize);
