@@ -259,9 +259,9 @@ public class MainFrame extends JFrame {
                 String methodv = method.getSelectedItem().toString();
                 String stateCodev = stateCode.getText();
                 // maximumPoolSize设置为2 ，拒绝策略为AbortPolic策略，直接抛出异常
-                pool = new ThreadPoolExecutor(100, 600, timeOutv * 1000, TimeUnit.MILLISECONDS,
+                pool = new ThreadPoolExecutor(100, 600, timeOutv * 100, TimeUnit.MILLISECONDS,
                         new LinkedBlockingQueue<Runnable>(), Executors.defaultThreadFactory(),
-                        new ThreadPoolExecutor.AbortPolicy());
+                        new ThreadPoolExecutor.DiscardPolicy());
 
                 int block = (int) Math.ceil(dictSize / threadNum);
                 int index = 0;
@@ -284,9 +284,9 @@ public class MainFrame extends JFrame {
                 scanState.setText("当前线程数" + threadFlag);
             } else {
                 startScan.setText("开始");
-                pool.shutdown();
+                pool.shutdownNow();
                 try {
-                    if (!pool.awaitTermination(10, TimeUnit.MILLISECONDS)) {
+                    if (!pool.awaitTermination(1, TimeUnit.MILLISECONDS)) {
                         pool.shutdownNow();
                     }
                 } catch (InterruptedException ex) {

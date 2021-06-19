@@ -51,11 +51,14 @@ public class ScanTask implements Runnable {
             //扫描数+1
             MainFrame.scanNumber += 1;
             try {
+                if (!MainFrame.startScan.isSelected()){
+                    throw new InterruptedException();
+                }
                 reqUrl = url.trim().concat(java.net.URLEncoder.encode(dict.trim(), "ISO-8859-1"));
                 System.out.println(reqUrl);
                 MainFrame.scanLog.setText(dict);
                 this.get(reqUrl);
-            } catch (IOException e) {
+            } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
                 try {
                     this.get(reqUrl);
@@ -73,11 +76,14 @@ public class ScanTask implements Runnable {
             String reqUrl ="";
             MainFrame.scanNumber += 1;
             try {
+                if (!MainFrame.startScan.isSelected()){
+                    throw new InterruptedException();
+                }
                 reqUrl = url.trim().concat(java.net.URLEncoder.encode(dict.trim(), "ISO-8859-1"));
                 System.out.println(reqUrl);
                 MainFrame.scanLog.setText(dict);
                 this.head(reqUrl);
-            } catch (IOException e) {
+            } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
                 try {
                     this.get(reqUrl);
